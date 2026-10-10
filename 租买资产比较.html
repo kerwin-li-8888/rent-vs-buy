@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>租房与买房资产比较计算器</title>
+  <style>
+    :root {
+      --ink: #17302d;
+      --muted: #61736e;
+      --line: #dbe5df;
+      --paper: #f7f9f5;
+      --white: #fff;
+      --green: #0f7355;
+      --green-soft: #e8f4ec;
+      --orange: #9a4d20;
+      --orange-soft: #fff3e7;
+      --shadow: 0 12px 38px rgba(24, 50, 40, .07);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--paper); color: var(--ink); font: 15px/1.55 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    a { color: var(--green); text-underline-offset: 3px; }
+    .shell { max-width: 1240px; margin: auto; padding: 30px 24px 64px; }
+    .eyebrow { display: inline-flex; align-items: center; gap: 8px; color: var(--green); font-size: 12px; font-weight: 800; letter-spacing: .1em; }
+    .eyebrow::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    h1 { margin: 8px 0 9px; font-size: clamp(29px, 4vw, 42px); letter-spacing: -.035em; line-height: 1.17; }
+    h2 { margin: 0; font-size: 20px; letter-spacing: -.015em; }
+    h3 { margin: 0; font-size: 15px; }
+    p { margin: 0; }
+    .lead { max-width: 780px; color: var(--muted); font-size: 15px; }
+    .topline { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 24px; }
+    .top-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+    .btn { border: 1px solid var(--line); border-radius: 10px; background: var(--white); color: var(--ink); padding: 9px 13px; font-size: 13px; font-weight: 700; transition: .15s ease; }
+    .btn:hover { border-color: #9cbaaa; background: #f5fbf6; }
+    .btn:focus-visible, input:focus-visible, summary:focus-visible { outline: 3px solid #9ed4b3; outline-offset: 2px; }
+    .btn-primary { color: white; background: var(--green); border-color: var(--green); }
+    .btn-primary:hover { background: #0b6148; color: white; }
+    .layout { display: grid; grid-template-columns: minmax(340px, .83fr) minmax(480px, 1.17fr); gap: 20px; align-items: start; min-width: 0; }
+    .panel { min-width: 0; border: 1px solid var(--line); border-radius: 18px; background: var(--white); box-shadow: var(--shadow); overflow: hidden; }
+    .panel-head { padding: 20px 23px 16px; border-bottom: 1px solid var(--line); }
+    .panel-head p { color: var(--muted); font-size: 13px; margin-top: 4px; }
+    .panel-body { padding: 20px 23px 24px; }
+    .section-title { display: flex; align-items: center; justify-content: space-between; margin: 2px 0 12px; }
+    .section-title small { color: var(--muted); font-size: 12px; }
+    .field-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+    .field { display: block; min-width: 0; }
+    .field > span:first-child { display: block; color: #455c55; font-size: 12px; font-weight: 700; margin-bottom: 5px; }
+    .input-wrap { display: block; position: relative; }
+    .input-wrap input { display: block; width: 100%; height: 43px; border: 1px solid #cadbd0; border-radius: 9px; background: #fbfcfa; color: var(--ink); padding: 8px 47px 8px 11px; font-variant-numeric: tabular-nums; transition: border-color .15s ease, box-shadow .15s ease; }
+    .input-wrap input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(15, 115, 85, .1); outline: none; }
+    .unit { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: #789087; font-size: 12px; pointer-events: none; }
+    .minor-section { margin-top: 23px; padding-top: 20px; border-top: 1px solid var(--line); }
+    .loan-cards { display: grid; gap: 10px; }
+    .loan-card { padding: 13px; border: 1px solid var(--line); border-radius: 11px; background: #fbfcfa; }
+    .loan-card h4 { margin: 0 0 10px; font-size: 13px; }
+    .loan-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .loan-fields .input-wrap input { padding-right: 39px; }
+    .loan-fields .unit { right: 8px; }
+    .loan-summary { margin-top: 11px; color: var(--green); font-size: 13px; font-weight: 750; }
+    .hint { color: var(--muted); font-size: 12px; margin-top: 10px; }
+    .advanced { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
+    .advanced summary { color: var(--green); font-weight: 800; cursor: pointer; list-style-position: outside; }
+    .advanced .advanced-inner { padding-top: 19px; }
+    .advanced h3 { margin: 17px 0 11px; padding-bottom: 7px; border-bottom: 1px solid #edf1ed; }
+    .advanced h3:first-child { margin-top: 0; }
+    .assumptions { margin-top: 17px; padding: 12px 14px; border-radius: 10px; background: #f2f7f2; color: #4d675b; font-size: 12px; }
+    .error { display: none; margin-top: 15px; padding: 10px 12px; border-radius: 9px; background: #fff0ec; color: #a43b20; font-size: 13px; font-weight: 700; }
+    .error.show { display: block; }
+    .result-panel .panel-body { padding-top: 21px; }
+    .verdict { border-radius: 13px; padding: 14px 17px; background: var(--green-soft); border: 1px solid #d0e8d6; }
+    .verdict.rent { background: var(--orange-soft); border-color: #f4dec5; }
+    .verdict.tie { background: #f2f5f3; border-color: var(--line); }
+    .verdict strong { display: block; font-size: 17px; }
+    .verdict p { margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .hero-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin-top: 15px; }
+    .metric { min-height: 129px; padding: 16px; border-radius: 13px; border: 1px solid var(--line); background: #fbfcfa; }
+    .metric.accent { border-color: #acd4be; background: #f1f8f2; }
+    .metric .label { color: #526960; font-size: 12px; font-weight: 750; }
+    .metric .value { display: block; font-size: clamp(22px, 3vw, 29px); font-weight: 850; letter-spacing: -.045em; line-height: 1.2; margin: 10px 0 4px; font-variant-numeric: tabular-nums; }
+    .metric .sub { color: var(--muted); font-size: 11px; }
+    .details-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+    .detail { border: 1px solid var(--line); border-radius: 10px; padding: 10px 11px; }
+    .detail span { display: block; color: var(--muted); font-size: 11px; }
+    .detail strong { display: block; margin-top: 3px; font-size: 15px; font-variant-numeric: tabular-nums; }
+    .detail small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+    .warn { color: var(--orange) !important; }
+    .table-section { margin-top: 24px; }
+    .table-section h3 { font-size: 15px; }
+    .table-section p { color: var(--muted); font-size: 12px; margin: 3px 0 10px; }
+    .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+    th, td { padding: 9px 11px; text-align: right; white-space: nowrap; border-bottom: 1px solid #edf1ed; }
+    th:first-child, td:first-child { text-align: left; }
+    thead { color: #586d63; background: #f4f7f3; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr.active { background: #eaf5ed; font-weight: 800; }
+    .footnotes { margin-top: 23px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--muted); font-size: 12px; }
+    .footnotes p + p { margin-top: 8px; }
+    .bottom { margin-top: 19px; color: var(--muted); font-size: 12px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+    @media (max-width: 970px) { .layout { grid-template-columns: minmax(0, 1fr); } }
+    @media (max-width: 640px) {
+      .shell { padding: 22px 14px 42px; }
+      .topline { display: block; }
+      .top-actions { justify-content: flex-start; margin-top: 18px; }
+      .panel-head, .panel-body { padding-left: 16px; padding-right: 16px; }
+      .hero-grid, .details-strip { grid-template-columns: 1fr 1fr; }
+      .details-strip .detail:last-child { grid-column: 1 / -1; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <div class="topline">
+      <header>
+        <span class="eyebrow">租买 · 资产对照工具</span>
+        <h1>这套房，买还是租？</h1>
+        <p class="lead">调整买入价、居住年限、月租和未来卖价，即时查看两条路径的期末资产差，以及各自需要达到的打平条件。</p>
+      </header>
+      <div class="top-actions">
+        <button class="btn" id="reset" type="button">恢复默认示例</button>
+        <button class="btn btn-primary" id="copy" type="button">复制测算摘要</button>
+      </div>
+    </div>
+
+    <div class="layout">
+      <section class="panel" aria-labelledby="inputs-title">
+        <div class="panel-head"><h2 id="inputs-title">调整条件</h2><p>金额用万元，月度支出用元；结果会随着输入立即重算。</p></div>
+        <div class="panel-body">
+          <form id="calculator" novalidate>
+            <div class="section-title"><h3>先填四个关键数</h3><small>默认值即文档演算示例</small></div>
+            <div class="field-grid">
+              <label class="field"><span>买入成交价</span><span class="input-wrap"><input id="buyPrice" type="number" value="200" min="0.01" step="0.01" inputmode="decimal"><span class="unit">万元</span></span></label>
+              <label class="field"><span>持有年限</span><span class="input-wrap"><input id="years" type="number" value="10" min="1" max="40" step="1" inputmode="numeric"><span class="unit">年</span></span></label>
+              <label class="field"><span>预计卖出成交价</span><span class="input-wrap"><input id="salePrice" type="number" value="210" min="0" step="0.01" inputmode="decimal"><span class="unit">万元</span></span></label>
+              <label class="field"><span>第一年月租</span><span class="input-wrap"><input id="rent" type="number" value="5400" min="0" step="1" inputmode="numeric"><span class="unit">元/月</span></span></label>
+            </div>
+
+            <div class="minor-section">
+              <div class="section-title"><h3>买房</h3><small>面积暂按 75㎡</small></div>
+              <div class="field-grid">
+                <label class="field"><span>面积</span><span class="input-wrap"><input id="buyArea" type="number" value="75" min="0" step="0.1"><span class="unit">㎡</span></span></label>
+                <label class="field"><span>物业费单价</span><span class="input-wrap"><input id="buyPropertyRate" type="number" value="1.8" min="0" step="0.1"><span class="unit">元/㎡月</span></span></label>
+                <label class="field"><span>家具家电</span><span class="input-wrap"><input id="buyFurniture" type="number" value="20" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                <label class="field"><span>额外装修</span><span class="input-wrap"><input id="buyRenovation" type="number" value="0" min="0" step="0.01"><span class="unit">万元</span></span></label>
+              </div>
+              <p class="hint">“家具家电”与“额外装修”分开填写，避免重复计入；默认合计 20 万元，对应计算方法文档的演算示例。</p>
+            </div>
+
+            <div class="minor-section">
+              <div class="section-title"><h3>贷款方案</h3><small>金额、利率和期限都可改</small></div>
+              <div class="loan-cards">
+                <div class="loan-card">
+                  <h4>公积金贷款</h4>
+                  <div class="loan-fields">
+                    <label class="field"><span>公积金额度</span><span class="input-wrap"><input id="pfLoan" type="number" value="50" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                    <label class="field"><span>公积金利率</span><span class="input-wrap"><input id="pfRate" type="number" value="2.6" min="0" max="100" step="0.01"><span class="unit">%</span></span></label>
+                    <label class="field"><span>公积金年限</span><span class="input-wrap"><input id="pfYears" type="number" value="24" min="1" max="40" step="1"><span class="unit">年</span></span></label>
+                  </div>
+                </div>
+                <div class="loan-card">
+                  <h4>商业贷款</h4>
+                  <div class="loan-fields">
+                    <label class="field"><span>商业贷额度</span><span class="input-wrap"><input id="cmLoan" type="number" value="50" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                    <label class="field"><span>商业贷利率</span><span class="input-wrap"><input id="cmRate" type="number" value="3" min="0" max="100" step="0.01"><span class="unit">%</span></span></label>
+                    <label class="field"><span>商业贷年限</span><span class="input-wrap"><input id="cmYears" type="number" value="24" min="1" max="40" step="1"><span class="unit">年</span></span></label>
+                  </div>
+                </div>
+              </div>
+              <p class="loan-summary" id="loanSummary">贷款合计 100.00 万元；房价减贷款后首付 100.00 万元。</p>
+              <p class="hint">不使用的贷款填 0；两笔贷款独立计算月供和剩余本金。首付金额不含买入税费、装修与家具家电。</p>
+            </div>
+
+            <div class="minor-section">
+              <div class="section-title"><h3>租房</h3><small>物业与月租分开</small></div>
+              <div class="field-grid">
+                <label class="field"><span>面积</span><span class="input-wrap"><input id="rentArea" type="number" value="75" min="0" step="0.1"><span class="unit">㎡</span></span></label>
+                <label class="field"><span>物业费单价</span><span class="input-wrap"><input id="rentPropertyRate" type="number" value="2.5" min="0" step="0.1"><span class="unit">元/㎡月</span></span></label>
+                <label class="field"><span>家具家电</span><span class="input-wrap"><input id="rentFurniture" type="number" value="5" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                <label class="field"><span>每年租金变化</span><span class="input-wrap"><input id="rentGrowth" type="number" value="0" min="-99" max="100" step="0.1"><span class="unit">%/年</span></span></label>
+              </div>
+              <p class="hint">打平月租指第一年的合同月租；租房物业费在其之外另付。</p>
+            </div>
+
+            <details class="advanced" id="advanced">
+              <summary>税费、资金收益和其他费用</summary>
+              <div class="advanced-inner">
+                <h3>资金与交易</h3>
+                <div class="field-grid">
+                  <label class="field"><span>买入税费与中介</span><span class="input-wrap"><input id="buyFees" type="number" value="5" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                  <label class="field"><span>剩余现金年收益</span><span class="input-wrap"><input id="cashReturn" type="number" value="2" min="-99" max="100" step="0.1"><span class="unit">%/年</span></span></label>
+                  <label class="field"><span>卖出按售价收费</span><span class="input-wrap"><input id="sellerRate" type="number" value="1" min="0" max="99.99" step="0.1"><span class="unit">%</span></span></label>
+                  <label class="field"><span>卖出固定税费</span><span class="input-wrap"><input id="sellerFixed" type="number" value="0" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                </div>
+                <h3>补充现金流 · 无报价时暂填零</h3>
+                <div class="field-grid">
+                  <label class="field"><span>业主维修等月费</span><span class="input-wrap"><input id="ownerExtra" type="number" value="365" min="0" step="1"><span class="unit">元/月</span></span></label>
+                  <label class="field"><span>租房其他月费</span><span class="input-wrap"><input id="renterExtra" type="number" value="0" min="0" step="1"><span class="unit">元/月</span></span></label>
+                  <label class="field"><span>租房中介、搬家等</span><span class="input-wrap"><input id="renterSetup" type="number" value="0" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                  <label class="field"><span>租房押金</span><span class="input-wrap"><input id="rentDeposit" type="number" value="0" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                  <label class="field"><span>期末押金退回</span><span class="input-wrap"><input id="rentRefund" type="number" value="0" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                  <label class="field"><span>买房可移动设备残值</span><span class="input-wrap"><input id="buyResidual" type="number" value="0" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                  <label class="field"><span>租房家具设备残值</span><span class="input-wrap"><input id="rentResidual" type="number" value="0" min="0" step="0.01"><span class="unit">万元</span></span></label>
+                </div>
+                <p class="hint">房屋装修价值已经反映在预计卖价中，不另加残值。未来卖出税费若随卖价变化，需按具体政策逐档重算。</p>
+              </div>
+            </details>
+          </form>
+          <div class="assumptions" id="assumptions">其他示例设置：剩余现金年收益 2%；买入费用 5 万元；卖出费率 1%；卖出固定费用 0；业主维修等月费 365 元。</div>
+          <div id="error" class="error" role="alert"></div>
+        </div>
+      </section>
+
+      <section class="panel result-panel" aria-labelledby="results-title">
+        <div class="panel-head"><h2 id="results-title">计算结果</h2><p>同一居住期末的名义资产比较；收入和日常生活费按两边相同处理。</p></div>
+        <div class="panel-body" id="results" aria-live="polite">
+          <div class="verdict" id="verdict"><strong id="winner">正在计算…</strong><p id="winnerNote"></p></div>
+          <div class="hero-grid">
+            <div class="metric accent"><span class="label">按当前月租，需要卖到</span><strong class="value" id="requiredSale">—</strong><span class="sub" id="saleSub">期末成交总价，未扣卖出费与剩余贷款</span></div>
+            <div class="metric"><span class="label">按当前卖价，对应第一年月租</span><strong class="value" id="equivalentRent">—</strong><span class="sub" id="rentSub">租金之外还要付物业费</span></div>
+          </div>
+          <div class="details-strip">
+            <div class="detail"><span>组合贷月供</span><strong id="mortgage">—</strong><small>两笔贷款合计，固定利率演算</small></div>
+            <div class="detail"><span>持有期累计利息</span><strong id="interest">—</strong><small>已计入月供</small></div>
+            <div class="detail"><span>期末剩余贷款</span><strong id="balance">—</strong><small>出售时扣除</small></div>
+          </div>
+          <div class="table-section">
+            <h3>月租 → 需要卖到多少</h3>
+            <p>只改变第一年月租，其余输入保持不变。含租客物业费及所填租金涨幅。</p>
+            <div class="table-wrap"><table><thead><tr><th scope="col">第一年月租</th><th scope="col">首月租金＋住房月费</th><th scope="col">期末打平卖价</th></tr></thead><tbody id="rentRows"></tbody></table></div>
+          </div>
+          <div class="table-section">
+            <h3>预计卖价 → 相当于多少月租</h3>
+            <p>只改变期末卖出成交总价；对应月租仍需另加租客物业费。</p>
+            <div class="table-wrap"><table><thead><tr><th scope="col">期末卖价</th><th scope="col">打平第一年月租</th><th scope="col">首月租金＋住房月费</th></tr></thead><tbody id="saleRows"></tbody></table></div>
+          </div>
+          <div class="footnotes">
+            <p id="cashNote"></p>
+            <p>算法逐月计入两笔贷款本息、持有费用、租金和剩余现金收益；卖出时扣剩余贷款与卖方费用。已还本金形成房屋权益，不再作为损失重复扣除。</p>
+            <p>这是条件测算，不预测未来房价、租约、利率或房屋成交时间，也不判断你能否承受月供。通勤、稳定性与装修自主性请另行比较。</p>
+          </div>
+        </div>
+      </section>
+    </div>
+    <p class="bottom">方法详见 <a href="./租买资产比较计算方法.md">租买资产比较计算方法</a>。公积金示例利率参考 <a href="https://www.gz.gov.cn/zt/shb/content/post_10646354.html" target="_blank" rel="noopener noreferrer">广州市政府公布的利率</a>；商贷利率、资金收益及交易费均为可改的演算假设。逐套贷款期限、税费和卖方成本应按实际报价核实。</p>
+  </main>
+  <script>
+    "use strict";
+
+    const inputIds = [
+      "buyPrice", "years", "salePrice", "rent", "buyArea", "buyPropertyRate",
+      "buyFurniture", "buyRenovation", "rentArea", "rentPropertyRate",
+      "rentFurniture", "rentGrowth", "buyFees", "cashReturn", "sellerRate",
+      "sellerFixed", "pfLoan", "pfRate", "pfYears", "cmLoan", "cmRate",
+      "cmYears", "ownerExtra", "renterExtra", "renterSetup", "rentDeposit",
+      "rentRefund", "buyResidual", "rentResidual"
+    ];
+
+    function readInputs() {
+      const data = {};
+      for (const id of inputIds) {
+        const element = document.getElementById(id);
+        if (element.value.trim() === "") throw new Error(`请填写“${element.closest("label").querySelector("span").textContent}”。`);
+        const value = Number(element.value);
+        if (!Number.isFinite(value) || !element.checkValidity()) throw new Error(`请检查“${element.closest("label").querySelector("span").textContent}”的数值范围。`);
+        data[id] = value;
+      }
+      validate(data);
+      return data;
+    }
+
+    function validate(data) {
+      if (data.buyPrice <= 0) throw new Error("买入成交价需大于 0。");
+      if (!Number.isInteger(data.years) || !Number.isInteger(data.pfYears) || !Number.isInteger(data.cmYears)) throw new Error("持有年限和贷款期限需填写整数年。");
+      if (data.pfLoan + data.cmLoan > data.buyPrice + 1e-9) throw new Error("两笔贷款之和不能超过买入成交价。");
+      if (data.rentRefund > data.rentDeposit) throw new Error("期末押金退回不能超过租房押金。");
+      if (data.sellerRate >= 100) throw new Error("卖出费率必须低于 100%。");
+      if (data.cashReturn <= -100 || data.rentGrowth <= -100) throw new Error("年收益率和租金变化率必须高于 −100%。");
+    }
+
+    function loan(principalWan, annualPct, years) {
+      const principal = principalWan * 10000;
+      const rate = annualPct / 100 / 12;
+      const months = years * 12;
+      const payment = principal === 0 ? 0 : rate === 0 ? principal / months : principal * rate / (1 - Math.pow(1 + rate, -months));
+      return { balance: principal, rate, payment, months, interest: 0 };
+    }
+
+    // 同一笔共同期初现金与共同收入会在两条路径中抵消，账本从零开始记录差额。
+    function calculate(data) {
+      validate(data);
+      const months = data.years * 12;
+      const monthlyReturn = Math.pow(1 + data.cashReturn / 100, 1 / 12) - 1;
+      const loans = [loan(data.pfLoan, data.pfRate, data.pfYears), loan(data.cmLoan, data.cmRate, data.cmYears)];
+      const initialPurchaseCash = (data.buyPrice - data.pfLoan - data.cmLoan + data.buyFees + data.buyFurniture + data.buyRenovation) * 10000;
+      const initialRenterCash = (data.rentFurniture + data.renterSetup + data.rentDeposit) * 10000;
+      const ownerMonthly = data.buyArea * data.buyPropertyRate + data.ownerExtra;
+      const renterMonthly = data.rentArea * data.rentPropertyRate + data.renterExtra;
+      let buyerCash = -initialPurchaseCash;
+      let renterCash = -initialRenterCash;
+      let rentFactor = 0;
+      let firstPayment = 0;
+      for (let t = 1; t <= months; t++) {
+        let mortgage = 0;
+        for (const item of loans) {
+          if (t > item.months || item.balance <= 1e-7) continue;
+          const interest = item.balance * item.rate;
+          const actual = Math.min(item.payment, item.balance + interest);
+          item.balance = Math.max(0, item.balance + interest - actual);
+          item.interest += interest;
+          mortgage += actual;
+        }
+        if (t === 1) firstPayment = mortgage;
+        const growth = Math.pow(1 + data.rentGrowth / 100, Math.floor((t - 1) / 12));
+        buyerCash = buyerCash * (1 + monthlyReturn) - mortgage - ownerMonthly;
+        renterCash = renterCash * (1 + monthlyReturn) - data.rent * growth - renterMonthly;
+        rentFactor = rentFactor * (1 + monthlyReturn) + growth;
+      }
+      const balance = loans.reduce((sum, item) => sum + item.balance, 0);
+      const interest = loans.reduce((sum, item) => sum + item.interest, 0);
+      const renterWealth = renterCash + (data.rentResidual + data.rentRefund) * 10000;
+      const sellerFraction = 1 - data.sellerRate / 100;
+      const buyerFixed = buyerCash - data.sellerFixed * 10000 - balance + data.buyResidual * 10000;
+      const buyerWealth = buyerFixed + data.salePrice * 10000 * sellerFraction;
+      const requiredSaleYuan = (renterWealth - buyerFixed) / sellerFraction;
+      const renterZeroRentWealth = renterWealth + data.rent * rentFactor;
+      const equivalentRent = (renterZeroRentWealth - buyerWealth) / rentFactor;
+      return {
+        buyerWealth, renterWealth, advantage: buyerWealth - renterWealth,
+        requiredSaleWan: requiredSaleYuan / 10000, equivalentRent,
+        balance, interest, firstPayment, initialPurchaseCash, initialRenterCash,
+        ownerMonthly, renterMonthly, rentFactor
+      };
+    }
+
+    const yuanFormat = new Intl.NumberFormat("zh-CN", { maximumFractionDigits: 0 });
+    const yuanPrecise = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const wanFormat = new Intl.NumberFormat("zh-CN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const fmtYuan = amount => `${yuanFormat.format(amount)} 元`;
+    const fmtWan = yuan => `${wanFormat.format(yuan / 10000)} 万元`;
+
+    function setText(id, value) { document.getElementById(id).textContent = value; }
+
+    function appendRow(body, cells, active) {
+      const row = document.createElement("tr");
+      if (active) row.className = "active";
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.appendChild(cell);
+      }
+      body.appendChild(row);
+    }
+
+    function render() {
+      const error = document.getElementById("error");
+      try {
+        const data = readInputs();
+        const result = calculate(data);
+        error.classList.remove("show");
+        document.getElementById("results").hidden = false;
+        const verdict = document.getElementById("verdict");
+        verdict.className = "verdict";
+        if (Math.abs(result.advantage) < 100) {
+          verdict.classList.add("tie");
+          setText("winner", "按当前月租与卖价，两边资产接近打平");
+        } else if (result.advantage > 0) {
+          setText("winner", `买房期末资产多留 ${fmtWan(result.advantage)}`);
+        } else {
+          verdict.classList.add("rent");
+          setText("winner", `租房期末资产多留 ${fmtWan(-result.advantage)}`);
+        }
+        setText("winnerNote", `${data.years} 年后出售，买入 ${wanFormat.format(data.buyPrice)} 万元、卖出 ${wanFormat.format(data.salePrice)} 万元；租房第一年月租 ${yuanFormat.format(data.rent)} 元。`);
+        setText("requiredSale", `${wanFormat.format(result.requiredSaleWan)} 万元`);
+        setText("saleSub", result.requiredSaleWan < 0 ? "反推为负值：实际不存在负售价，请重新检查假设" : `比买入价${result.requiredSaleWan >= data.buyPrice ? "高" : "低"} ${wanFormat.format(Math.abs(result.requiredSaleWan - data.buyPrice))} 万元`);
+        setText("equivalentRent", fmtYuan(result.equivalentRent));
+        setText("rentSub", result.equivalentRent < 0 ? "反推为负值：无非负的打平月租" : `另加租房物业及其他月费 ${yuanPrecise.format(result.renterMonthly)} 元`);
+        setText("mortgage", fmtYuan(result.firstPayment));
+        setText("interest", fmtWan(result.interest));
+        setText("balance", fmtWan(result.balance));
+        setText("cashNote", `买房期初现金流出 ${fmtWan(result.initialPurchaseCash)}；租房期初家具、其他费用及押金流出 ${fmtWan(result.initialRenterCash)}。首月业主物业及其他月费 ${yuanPrecise.format(result.ownerMonthly)} 元，租客物业及其他月费 ${yuanPrecise.format(result.renterMonthly)} 元。`);
+        setText("loanSummary", `贷款合计 ${wanFormat.format(data.pfLoan + data.cmLoan)} 万元；房价减贷款后首付 ${wanFormat.format(data.buyPrice - data.pfLoan - data.cmLoan)} 万元。`);
+        setText("assumptions", `其他设置：现金年收益 ${data.cashReturn}%；买入费用 ${wanFormat.format(data.buyFees)} 万元；卖出费率 ${data.sellerRate}%；卖出固定费用 ${wanFormat.format(data.sellerFixed)} 万元。`);
+
+        const rentRows = document.getElementById("rentRows");
+        rentRows.replaceChildren();
+        const rents = [...new Set([Math.max(0, data.rent - 400), data.rent, data.rent + 400])].sort((a, b) => a - b);
+        for (const rent of rents) {
+          const scenario = calculate({ ...data, rent });
+          appendRow(rentRows, [fmtYuan(rent), fmtYuan(rent + result.renterMonthly), `${wanFormat.format(scenario.requiredSaleWan)} 万元`], Math.abs(rent - data.rent) < 1e-9);
+        }
+        const saleRows = document.getElementById("saleRows");
+        saleRows.replaceChildren();
+        const sales = [...new Set([Math.max(0, data.salePrice - 20), Math.max(0, data.salePrice - 10), data.salePrice, data.salePrice + 10, data.salePrice + 20])].sort((a, b) => a - b);
+        for (const salePrice of sales) {
+          const scenario = calculate({ ...data, salePrice });
+          appendRow(saleRows, [`${wanFormat.format(salePrice)} 万元`, fmtYuan(scenario.equivalentRent), fmtYuan(scenario.equivalentRent + result.renterMonthly)], Math.abs(salePrice - data.salePrice) < 1e-9);
+        }
+        return { data, result };
+      } catch (problem) {
+        error.textContent = problem.message;
+        error.classList.add("show");
+        setText("loanSummary", "请先修正输入；贷款合计与首付会自动更新。");
+        document.getElementById("results").hidden = true;
+        return null;
+      }
+    }
+
+    function summaryText(data, result) {
+      return [
+        `租买资产比较｜${data.years} 年`,
+        `买入 ${data.buyPrice} 万元；预计期末卖出 ${data.salePrice} 万元；第一年月租 ${data.rent} 元。`,
+        `买房投入：家具家电 ${data.buyFurniture} 万元、额外装修 ${data.buyRenovation} 万元、买入费用 ${data.buyFees} 万元；租房家具家电 ${data.rentFurniture} 万元。`,
+        `贷款：公积金 ${data.pfLoan} 万元／${data.pfRate}%／${data.pfYears} 年；商贷 ${data.cmLoan} 万元／${data.cmRate}%／${data.cmYears} 年；首月月供 ${yuanPrecise.format(result.firstPayment)} 元。`,
+        `首月物业：买房 ${yuanPrecise.format(data.buyArea * data.buyPropertyRate)} 元，租房 ${yuanPrecise.format(data.rentArea * data.rentPropertyRate)} 元；租金年变化 ${data.rentGrowth}%；现金年收益 ${data.cashReturn}%。`,
+        `卖出费率 ${data.sellerRate}%，卖出固定税费 ${data.sellerFixed} 万元；业主其他月费 ${data.ownerExtra} 元，租房其他月费 ${data.renterExtra} 元。`,
+        `租房中介搬家等 ${data.renterSetup} 万元，押金 ${data.rentDeposit} 万元、期末退回 ${data.rentRefund} 万元；买房可移动设备残值 ${data.buyResidual} 万元、租房家具设备残值 ${data.rentResidual} 万元。`,
+        `按当前月租，打平所需期末卖出成交价 ${wanFormat.format(result.requiredSaleWan)} 万元。`,
+        `按当前卖价，对应第一年月租 ${yuanPrecise.format(result.equivalentRent)} 元，另加租客物业及其他月费 ${yuanPrecise.format(result.renterMonthly)} 元。`,
+        `按两项当前假设，买房相对租房期末资产差 ${wanFormat.format(result.advantage / 10000)} 万元（正数为买房多留）。`,
+        `持有期累计贷款利息 ${wanFormat.format(result.interest / 10000)} 万元；期末剩余贷款 ${wanFormat.format(result.balance / 10000)} 万元。`,
+        "条件测算，非未来售价预测；贷款、税费、租约与居住品质须另核。"
+      ].join("\n");
+    }
+
+    function setup() {
+      const form = document.getElementById("calculator");
+      form.addEventListener("input", render);
+      form.addEventListener("change", render);
+      document.getElementById("reset").addEventListener("click", () => { form.reset(); render(); });
+      document.getElementById("copy").addEventListener("click", async event => {
+        const current = render();
+        if (!current) return;
+        const content = summaryText(current.data, current.result);
+        let copied = false;
+        try {
+          if (navigator.clipboard && window.isSecureContext) { await navigator.clipboard.writeText(content); copied = true; }
+        } catch (_) { /* 本地 file 页面可能禁止 Clipboard API，继续使用选中复制。 */ }
+        if (!copied) {
+          const area = document.createElement("textarea");
+          area.value = content;
+          area.style.position = "fixed";
+          area.style.opacity = "0";
+          document.body.appendChild(area);
+          area.select();
+          try { copied = document.execCommand("copy"); } catch (_) { copied = false; }
+          area.remove();
+        }
+        const button = event.currentTarget;
+        button.textContent = copied ? "已复制摘要" : "复制失败，请手动记录";
+        window.setTimeout(() => { button.textContent = "复制测算摘要"; }, 2500);
+      });
+      render();
+    }
+
+    if (typeof document !== "undefined") setup();
+  </script>
+</body>
+</html>
